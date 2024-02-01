@@ -1,0 +1,4 @@
+printshellcmds: True
+cores: all
+use-conda: True
+conda-frontend: conda
