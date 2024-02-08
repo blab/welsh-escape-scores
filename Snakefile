@@ -26,19 +26,152 @@ rule root_and_prune_tree:
     pass
 
 rule refine:
-    pass
+    input:
+        metadata="results/{season}/metadata.tsv",
+        alignment="results/{season}/aligned.fasta",
+        tree="results/{season}/tree_raw.nwk",
+    output:
+        tree="results/{season}/tree.nwk",
+        node_data="results/{season}/branch_lengths.json",
+    conda: "env.yaml"
+    shell:
+        """
+        augur refine \
+            --metadata {input.metadata} \
+            --alignment {input.alignment} \
+            --tree {input.tree} \
+            --keep-root \
+            --output-tree {output.tree} \
+            --output-node-data {output.node_data}
+        """
 
 rule distances:
-    pass
-
-rule subsample_future:
-    pass
+    input:
+        tree="results/{season}/tree.nwk",
+        alignments = [
+            "results/{season}/translations/SigPep.fasta",
+            "results/{season}/translations/HA1.fasta",
+            "results/{season}/translations/HA2.fasta",
+        ],
+        distance_maps = [
+            "config/welsh_epitope_sites.json",
+            "config/welsh_escape_by_site_and_amino_acid.json",
+        ],
+    output:
+        distances="results/{season}/epitope_distances.json",
+    params:
+        genes = ["SigPep", "HA1", "HA2"],
+        comparisons = ["root", "root"],
+        attribute_names = ["welsh_ep", "welsh_escape"],
+    conda: "env.yaml"
+    shell:
+        """
+        augur distance \
+            --tree {input.tree} \
+            --alignment {input.alignments} \
+            --gene-names {params.genes} \
+            --compare-to {params.comparisons} \
+            --attribute-name {params.attribute_names} \
+            --map {input.distance_maps} \
+            --output {output.distances}
+        """
 
 rule frequencies:
-    pass
+    input:
+        tree="results/{season}/tree.nwk",
+        metadata="results/{season}/metadata.tsv",
+    output:
+        frequencies="results/{season}/frequencies.json",
+    params:
+        narrow_bandwidth = 1 / 12.0,
+        wide_bandwidth = 3 / 12.0,
+        proportion_wide = 0.0,
+        pivot_interval = 1
+    conda: "env.yaml"
+    shell:
+        """
+        augur frequencies \
+            --method kde \
+            --tree {input.tree} \
+            --metadata {input.metadata} \
+            --narrow-bandwidth {params.narrow_bandwidth} \
+            --wide-bandwidth {params.wide_bandwidth} \
+            --proportion-wide {params.proportion_wide} \
+            --pivot-interval {params.pivot_interval} \
+            --max-date {wildcards.season} \
+            --output {output}
+        """
+
+rule convert_node_data_to_table:
+    input:
+        tree="results/{season}/tree.nwk",
+        metadata="results/{season}/metadata.tsv",
+        node_data="results/{season}/aa_sequences.json",
+    output:
+        table = "builds/{build_name}/{segment}/node-data-table.tsv",
+    conda: "env.yaml"
+    shell:
+        """
+        python3 scripts/node_data_to_table.py \
+            --tree {input.tree} \
+            --metadata {input.metadata} \
+            --jsons {input.node_data} \
+            --annotations season="{wildcards.season}" \
+            --output {output}
+        """
+
+rule convert_frequencies_to_table:
+    input:
+        tree="results/{season}/tree.nwk",
+        frequencies="results/{season}/frequencies.json",
+    output:
+        frequencies = "results/{season}/frequencies.tsv",
+    conda: "env.yaml"
+    shell:
+        """
+        python3 scripts/frequencies_to_table.py \
+            --tree {input.tree} \
+            --frequencies {input.frequencies} \
+            --output {output.frequencies}
+        """
+
+rule merge_node_data_and_frequencies:
+    input:
+        node_data="results/{season}/node_data.tsv",
+        frequencies="results/{season}/frequencies.tsv",
+    output:
+        tip_attributes="results/{season}/tip_attributes.tsv",
+    conda: "env.yaml"
+    shell:
+        """
+        csvtk join \
+            -t \
+            -f strain \
+            {input.node_data} \
+            {input.frequencies} > {output.tip_attributes}
+        """
+
+def get_future_season_tips_by_current_season(wildcards):
+    future_season = FUTURE_SEASON_BY_CURRENT_SEASON[wildcards.season]
+    return f"results/{future_season}/tip_attributes.tsv"
 
 rule distances_to_future:
-    pass
+    input:
+        current_season_tips="results/{season}/tip_attributes.tsv",
+        future_season_tips=get_future_season_tips_by_current_season,
+    output:
+        weighted_distances_to_future="results/{season}/weighted_distances_to_future.json",
+    params:
+        distance_attribute_name="weighted_distance_to_observed_future",
+    conda: "env.yaml"
+    shell:
+        """
+        python3 scripts/calculate_weighted_distance.py \
+            --current-tip-attributes {input.current_season_tips} \
+            --future-tip-attributes {input.future_season_tips} \
+            --distance-attribute-name {params.weighted_distance_to_observed_future} \
+            --output {output.weighted_distances_to_future}
+        """
 
 rule export:
     input:
@@ -53,6 +186,13 @@ rule export:
     conda: "env.yaml",
     shell:
         """
+        augur export v2 \
+            --tree {input.tree} \
+            --metadata {input.metadata} \
+            --node-data {input.branch_lengths} {input.epitope_distances} {input.weighted_distances_to_future} \
+            --include-root-sequence \
+            --minify-json \
+            --output {output.auspice_json}
         """
 
 rule json_to_table:
