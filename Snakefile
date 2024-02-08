@@ -14,22 +14,76 @@ rule get_nextclade_dataset:
     pass
 
 rule align:
-    pass
+    input:
+        sequences="results/{season}/subsampled_sequences.fasta",
+    output:
+        alignment="results/{season}/aligned.fasta",
+        nextclade_annotations="results/{season}/nextclade.tsv",
+    conda: "env.yaml"
+    threads: 8
+    shell:
+        """
+        nextclade3 run \
+            -j {threads} \
+            -D {input.nextclade_directory} \
+            --output-fasta {output.alignment} \
+            --output-tsv {output.nextclade_annotations} \
+            {input.sequences}
+        """
 
 rule merge_metadata:
-    pass
+    input:
+        metadata="results/{season}/subsampled_metadata.tsv",
+        nextclade_annotations="results/{season}/nextclade.tsv",
+    output:
+        metadata="results/{season}/metadata.tsv",
+    conda: "env.yaml"
+    shell:
+        """
+        csvtk join \
+            -t \
+            --fields "seqName;strain" \
+            {input.metadata} \
+            {input.nextclade_annotations} > {output.metadata}
+        """
 
 rule tree:
-    pass
+    input:
+        alignment="results/{season}/aligned.fasta",
+    output:
+        tree="results/{season}/tree_raw.nwk",
+    params:
+        tree_builder_args="-ninit 10 -n 4 -czb -nt AUT",
+    conda: "env.yaml"
+    shell:
+        """
+        augur tree \
+            --alignment {input.alignment} \
+            --tree-builder-args="{params.tree_builder_args}" \
+            --output {output.tree}
+        """
 
 rule root_and_prune_tree:
-    pass
+    input:
+        tree="results/{season}/tree_raw.nwk",
+    output:
+        tree="results/{season}/tree_rooted.nwk",
+    params:
+        root="A/Wisconsin/67/2005-egg",
+    conda: "env.yaml"
+    shell:
+        """
+        python3 scripts/root_and_prune_tree.py \
+            --tree {input.tree} \
+            --root {params.root} \
+            --output {output.tree}
+        """
 
 rule refine:
     input:
         metadata="results/{season}/metadata.tsv",
         alignment="results/{season}/aligned.fasta",
-        tree="results/{season}/tree_raw.nwk",
+        tree="results/{season}/tree_rooted.nwk",
     output:
         tree="results/{season}/tree.nwk",
         node_data="results/{season}/branch_lengths.json",
