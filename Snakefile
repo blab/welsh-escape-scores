@@ -71,6 +71,7 @@ rule subsample:
         min_length=1700,
         exclude_ambiguous_dates_by="any",
         min_date=get_min_date_for_season,
+        subsample_max_sequences=1000,
     conda: "env.yaml"
     shell:
         """
@@ -85,9 +86,9 @@ rule subsample:
             --exclude-ambiguous-dates-by {params.exclude_ambiguous_dates_by} \
             --min-date {params.min_date:q} \
             --max-date {wildcards.season} \
-            --query "(date_submitted != 'N/A') & (date_submitted != '?') & (date_submitted < '{wildcards.season}')" \
+            --query "(date_submitted != 'N/A') & (date_submitted != '?') & (date_submitted < '{wildcards.season}') & (passage_category != 'egg')" \
             --group-by region year month \
-            --subsample-max-sequences 100 \
+            --subsample-max-sequences {params.subsample_max_sequences} \
             --output-metadata {output.metadata} \
             --output-sequences {output.sequences}
         """
