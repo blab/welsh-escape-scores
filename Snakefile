@@ -85,6 +85,7 @@ rule subsample:
             --exclude-ambiguous-dates-by {params.exclude_ambiguous_dates_by} \
             --min-date {params.min_date:q} \
             --max-date {wildcards.season} \
+            --query "(date_submitted != 'N/A') & (date_submitted != '?') & (date_submitted < '{wildcards.season}')" \
             --group-by region year month \
             --subsample-max-sequences 100 \
             --output-metadata {output.metadata} \
