@@ -63,6 +63,7 @@ rule subsample:
         sequences="data/sequences.fasta.xz",
         sequence_index="data/sequence_index.tsv",
         outliers="config/outliers.txt",
+        references="config/references.txt",
     output:
         metadata="results/{season}/subsampled_metadata.tsv",
         sequences="results/{season}/subsampled_sequences.fasta",
@@ -77,6 +78,7 @@ rule subsample:
             --metadata {input.metadata} \
             --sequences {input.sequences} \
             --sequence-index {input.sequence_index} \
+            --include {input.references} \
             --exclude {input.outliers} \
             --min-length {params.min_length} \
             --non-nucleotide \
@@ -92,6 +94,8 @@ rule subsample:
 rule get_nextclade_dataset:
     output:
         nextclade_directory=directory("nextclade"),
+        reference="nextclade/reference.fasta",
+        gene_map="nextclade/genome_annotation.gff3",
     params:
         dataset="nextstrain/flu/h3n2/ha/wisconsin-67-2005",
     conda: "env.yaml"
@@ -204,7 +208,6 @@ rule refine:
         """
 
 rule ancestral:
-    message: "Reconstructing ancestral sequences and mutations"
     input:
         tree="results/{season}/tree.nwk",
         alignment="results/{season}/aligned.fasta",
@@ -213,7 +216,8 @@ rule ancestral:
             "results/{season}/translations/HA1.fasta",
             "results/{season}/translations/HA2.fasta",
         ],
-        annotation = "nextclade/genome_annotation.gff3",
+        reference="nextclade/reference.fasta",
+        annotation="nextclade/genome_annotation.gff3",
     output:
         node_data = "results/{season}/muts.json",
         translations = [
@@ -233,6 +237,7 @@ rule ancestral:
             --tree {input.tree} \
             --alignment {input.alignment} \
             --annotation {input.annotation} \
+            --root-sequence {input.reference} \
             --genes {params.genes} \
             --translations "{params.input_translations}" \
             --output-node-data {output.node_data} \
@@ -410,9 +415,20 @@ rule json_to_table:
             --output-metadata {output.distances}
         """
 
+rule annotate_season_to_distances:
+    input:
+        distances="results/{season}/distances_by_strain.tsv",
+    output:
+        distances="results/{season}/distances_by_strain_with_season.tsv",
+    conda: "env.yaml"
+    shell:
+        """
+        awk 'OFS="\\t" {{ if (NR == 1) {{ print $0,"season" }} else {{ print $0,"{wildcards.season}" }} }}' {input.distances} > {output.distances}
+        """
+
 rule aggregate_distances:
     input:
-        distances=expand("results/{season}/distances_by_strain.tsv", season=list(FUTURE_SEASON_BY_CURRENT_SEASON.keys())),
+        distances=expand("results/{season}/distances_by_strain_with_season.tsv", season=list(FUTURE_SEASON_BY_CURRENT_SEASON.keys())),
     output:
         distances="results/distances.tsv",
     conda: "env.yaml"

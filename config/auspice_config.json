@@ -24,64 +24,14 @@
       "type": "continuous"
     },
     {
-      "key": "clade_membership",
+      "key": "clade",
       "title": "Clade",
       "type": "categorical"
     },
     {
       "key": "subclade",
       "title": "Subclade",
-      "type": "categorical",
-      "scale": [
-        [
-          "G.1.1",
-          "#403CC5"
-        ],
-        [
-          "G.1.1.2",
-          "#4067CF"
-        ],
-        [
-          "G.1.3.1",
-          "#4A8BC3"
-        ],
-        [
-          "G.1.3.2",
-          "#5AA4A9"
-        ],
-        [
-          "G.2",
-          "#6FB488"
-        ],
-        [
-          "G.2.1",
-          "#8BBB69"
-        ],
-        [
-          "G.2.2",
-          "#A9BD53"
-        ],
-        [
-          "H",
-          "#C7B944"
-        ],
-        [
-          "H.1",
-          "#DDA93C"
-        ],
-        [
-          "H.2",
-          "#E68A35"
-        ],
-        [
-          "H.3",
-          "#E35C2C"
-        ],
-        [
-          "H.4",
-          "#DB2823"
-        ]
-      ]
+      "type": "categorical"
     },
     {
       "key": "weighted_distance_to_observed_future",
