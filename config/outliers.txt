@@ -33,6 +33,7 @@ A/Catalonia/NSVH100751838/2018
 A/Chanthaburi/P1933/2023
 A/ChiangRai/D1249/2022
 A/ChiangRai/D1251/2022
+A/ChiangRai/NIC-B732/2022
 A/ChiangRai/NIC-P3252/2022
 A/Chile/8266/2003
 A/Corsica/10/2009
@@ -70,6 +71,7 @@ A/Guatemala/116/2018
 A/Hawaii/28/2020
 A/Hawaii/28/2020-egg
 A/Hawaii/3/2012
+A/Hebei-Chengde/11208/2022
 A/Hebei-Shuangqiao/11248/2022
 A/Heilongjiang-Jiguan/1222/2020
 A/Helsinki/798/2013
@@ -259,6 +261,8 @@ A/Kenya/155/2011
 A/Kenya/168/2011
 A/Kenya/170/2011
 A/Kenya/AF5623/2007
+A/KhonKaen/FS005/2022
+A/Krabi/THIS15/2023
 A/Kunming/1-Va10/2005
 A/Liaoning-Baita/173/2020
 A/Liaoning-Tiedong/1153/2011
@@ -350,6 +354,7 @@ A/Montpellier/F_004_107_MF/2020
 A/Moscow/CRIE/415/2019
 A/Myanmar/18M090/2018
 A/Myanmar/19M225/2019
+A/NakhonPhanom/P3758/2022
 A/NakhonPhanom/P4295/2022
 A/Nanjing/1/2010
 A/Nebraska/1/2021
@@ -479,6 +484,7 @@ A/SaoPaulo/65194/2015
 A/SaoPaulo/IAL/C8809/2022
 A/Sari/388/2006
 A/Sedbury/2991/2023
+A/Shanghai-Huangpu/1658/2022
 A/Shanghai-Minxing/1482/2017
 A/Shanghai/6/2014
 A/Singapore/GP11121/2022
