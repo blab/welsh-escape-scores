@@ -404,6 +404,7 @@ rule json_to_table:
         distances="results/{season}/distances_by_strain.tsv",
     params:
         attributes=[
+            "subclade",
             "welsh_ep",
             "welsh_escape",
             "weighted_distance_to_observed_future",
@@ -442,6 +443,7 @@ rule aggregate_distances:
 rule plot_distances:
     input:
         distances="results/distances.tsv",
+        color_schemes="config/color_schemes.tsv",
     output:
         distances_figure="results/distance_to_the_future_by_epitope_score_and_season.pdf",
     conda: "env.yaml"
