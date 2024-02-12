@@ -49,6 +49,11 @@
       "type": "continuous"
     },
     {
+      "key": "ha1",
+      "title": "HA1 mutations",
+      "type": "continuous"
+    },
+    {
       "key": "region",
       "title": "Region",
       "type": "categorical"

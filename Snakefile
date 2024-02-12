@@ -256,6 +256,7 @@ rule distances:
             "results/{season}/translations/HA2_withInternalNodes.fasta",
         ],
         distance_maps = [
+            "config/ha1_sites.json",
             "config/welsh_epitope_sites.json",
             "config/welsh_escape_by_site_and_amino_acid.json",
         ],
@@ -263,8 +264,8 @@ rule distances:
         distances="results/{season}/epitope_distances.json",
     params:
         genes = ["SigPep", "HA1", "HA2"],
-        comparisons = ["root", "root"],
-        attribute_names = ["welsh_ep", "welsh_escape"],
+        comparisons = ["root", "root", "root"],
+        attribute_names = ["ha1", "welsh_ep", "welsh_escape"],
     conda: "env.yaml"
     shell:
         """
