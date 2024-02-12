@@ -1,6 +1,7 @@
 {
   "name": "Welsh et al. epitope sites",
   "default": 0,
+  "output_type": "integer",
   "map": {
     "HA1": {
       "50": 1,

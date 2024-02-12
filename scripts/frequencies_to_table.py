@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser.add_argument("--annotations", nargs="+", help="additional annotations to add to the output table in the format of 'key=value' pairs")
     parser.add_argument("--output", required=True, help="tab-delimited file with frequency per node at the last available timepoint")
     parser.add_argument("--include-internal-nodes", action="store_true", help="include data associated with internal nodes in the output table")
-    parser.add_argument("--minimum-frequency", type=float, default=1e-5, help="minimum frequency to keep below which values will be zeroed and all others renormalized to sum to one")
+    parser.add_argument("--minimum-frequency", type=float, default=1e-8, help="minimum frequency to keep below which values will be zeroed and all others renormalized to sum to one")
     args = parser.parse_args()
 
     # Load tree.

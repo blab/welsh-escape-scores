@@ -54,6 +54,11 @@
       "type": "continuous"
     },
     {
+      "key": "welsh_escape_per_ha1",
+      "title": "Welsh et al. escape score per HA1 subs",
+      "type": "continuous"
+    },
+    {
       "key": "region",
       "title": "Region",
       "type": "categorical"

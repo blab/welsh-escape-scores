@@ -279,6 +279,19 @@ rule distances:
             --output {output.distances}
         """
 
+rule scale_escape_scores_by_ha1_substitutions:
+    input:
+        distances="results/{season}/epitope_distances.json",
+    output:
+        distances="results/{season}/scaled_escape_scores.json",
+    conda: "env.yaml"
+    shell:
+        """
+        python3 scripts/scale_escape_scores_by_ha1_substititions.py \
+            --distances {input.distances} \
+            --output {output.distances}
+        """
+
 rule frequencies:
     input:
         tree="results/{season}/tree.nwk",
@@ -334,6 +347,7 @@ rule convert_frequencies_to_table:
         python3 scripts/frequencies_to_table.py \
             --tree {input.tree} \
             --frequencies {input.frequencies} \
+            --annotations season="{wildcards.season}" \
             --output {output.frequencies}
         """
 
@@ -382,6 +396,7 @@ rule export:
         branch_lengths="results/{season}/branch_lengths.json",
         muts="results/{season}/muts.json",
         epitope_distances="results/{season}/epitope_distances.json",
+        scaled_escape_scores="results/{season}/scaled_escape_scores.json",
         weighted_distances_to_future="results/{season}/weighted_distances_to_future.json",
         auspice_config="config/auspice_config.json",
     output:
@@ -392,7 +407,7 @@ rule export:
         augur export v2 \
             --tree {input.tree} \
             --metadata {input.metadata} \
-            --node-data {input.branch_lengths} {input.muts} {input.epitope_distances} {input.weighted_distances_to_future} \
+            --node-data {input.branch_lengths} {input.muts} {input.epitope_distances} {input.scaled_escape_scores} {input.weighted_distances_to_future} \
             --auspice-config {input.auspice_config} \
             --minify-json \
             --output {output.auspice_json}
@@ -406,8 +421,10 @@ rule json_to_table:
     params:
         attributes=[
             "subclade",
+            "ha1",
             "welsh_ep",
             "welsh_escape",
+            "welsh_escape_per_ha1",
             "weighted_distance_to_observed_future",
         ]
     conda: "env.yaml"
@@ -419,15 +436,20 @@ rule json_to_table:
             --output-metadata {output.distances}
         """
 
-rule annotate_season_to_distances:
+rule merge_distances_with_frequencies:
     input:
         distances="results/{season}/distances_by_strain.tsv",
+        frequencies="results/{season}/frequencies.tsv",
     output:
         distances="results/{season}/distances_by_strain_with_season.tsv",
     conda: "env.yaml"
     shell:
         """
-        awk 'OFS="\\t" {{ if (NR == 1) {{ print $0,"season" }} else {{ print $0,"{wildcards.season}" }} }}' {input.distances} > {output.distances}
+        csvtk join \
+            -t \
+            --fields "name;strain" \
+            {input.distances} \
+            {input.frequencies} > {output.distances}
         """
 
 rule aggregate_distances:
