@@ -11,7 +11,9 @@ FUTURE_SEASON_BY_CURRENT_SEASON = {
 
 rule all:
     input:
-        "results/distance_to_the_future_by_epitope_score_and_season.pdf",
+        distances_by_subclade="results/distance_to_the_future_by_epitope_score_subclade_and_season.pdf",
+        distances_by_historical_clade="results/distance_to_the_future_by_epitope_score_historical_clade_and_season.pdf",
+        escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
 
 rule download_metadata:
     output:
@@ -389,6 +391,28 @@ rule distances_to_future:
             --output {output.weighted_distances_to_future}
         """
 
+rule clades:
+    input:
+        tree="results/{season}/tree.nwk",
+        mutations="results/{season}/muts.json",
+        clades="config/clades_{season}.tsv",
+    output:
+        clades="results/{season}/clades.json",
+    params:
+        membership_name="historicalclade",
+        label_name="historicalclade",
+    conda: "env.yaml"
+    shell:
+        """
+        augur clades \
+            --tree {input.tree} \
+            --mutations {input.mutations} \
+            --clades {input.clades} \
+            --membership-name {params.membership_name:q} \
+            --label-name {params.label_name:q} \
+            --output {output.clades}
+        """
+
 rule export:
     input:
         tree="results/{season}/tree.nwk",
@@ -398,6 +422,7 @@ rule export:
         epitope_distances="results/{season}/epitope_distances.json",
         scaled_escape_scores="results/{season}/scaled_escape_scores.json",
         weighted_distances_to_future="results/{season}/weighted_distances_to_future.json",
+        clades="results/{season}/clades.json",
         auspice_config="config/auspice_config.json",
     output:
         auspice_json="auspice/{season}.json",
@@ -407,7 +432,7 @@ rule export:
         augur export v2 \
             --tree {input.tree} \
             --metadata {input.metadata} \
-            --node-data {input.branch_lengths} {input.muts} {input.epitope_distances} {input.scaled_escape_scores} {input.weighted_distances_to_future} \
+            --node-data {input.branch_lengths} {input.muts} {input.epitope_distances} {input.scaled_escape_scores} {input.weighted_distances_to_future} {input.clades} \
             --auspice-config {input.auspice_config} \
             --minify-json \
             --output {output.auspice_json}
@@ -420,6 +445,7 @@ rule json_to_table:
         distances="results/{season}/distances_by_strain.tsv",
     params:
         attributes=[
+            "historicalclade",
             "subclade",
             "ha1",
             "welsh_ep",
@@ -468,7 +494,9 @@ rule plot_distances:
         distances="results/distances.tsv",
         color_schemes="config/color_schemes.tsv",
     output:
-        distances_figure="results/distance_to_the_future_by_epitope_score_and_season.pdf",
+        distances_by_subclade="results/distance_to_the_future_by_epitope_score_subclade_and_season.pdf",
+        distances_by_historical_clade="results/distance_to_the_future_by_epitope_score_historical_clade_and_season.pdf",
+        escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
     conda: "env.yaml"
     notebook:
         "notebooks/plot-distances.py.ipynb"

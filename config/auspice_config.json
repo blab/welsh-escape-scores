@@ -24,8 +24,8 @@
       "type": "continuous"
     },
     {
-      "key": "clade",
-      "title": "Clade",
+      "key": "historicalclade",
+      "title": "Historical clade",
       "type": "categorical"
     },
     {
@@ -91,11 +91,11 @@
   ],
   "display_defaults": {
     "map_triplicate": true,
-    "color_by": "subclade",
-    "branch_label": "Subclade"
+    "color_by": "historicalclade",
+    "branch_label": "historicalclade"
   },
   "filters": [
-    "clade_membership",
+    "historicalclade",
     "subclade",
     "region",
     "country",
@@ -104,7 +104,6 @@
   ],
   "panels": [
     "tree",
-    "map",
     "entropy",
     "frequencies"
   ]
