@@ -8,12 +8,22 @@ FUTURE_SEASON_BY_CURRENT_SEASON = {
     "2022-10-01": "2023-10-01",
     "2023-02-01": "2024-02-01",
 }
+ALL_SEASONS = sorted(
+    set(list(FUTURE_SEASON_BY_CURRENT_SEASON.keys())) |
+    set(list(FUTURE_SEASON_BY_CURRENT_SEASON.values()))
+)
+
+wildcard_constraints:
+    season=r"\d{4}-\d{2}-\d{2}",
 
 rule all:
     input:
-        distances_by_subclade="results/distance_to_the_future_by_epitope_score_subclade_and_season.pdf",
-        distances_by_historical_clade="results/distance_to_the_future_by_epitope_score_historical_clade_and_season.pdf",
+        distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
+        distances_by_subclade_and_lbi="results/distance_to_the_future_by_lbi_subclade_and_season.pdf",
+        distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
+        auspice_jsons=expand("auspice/welsh-escape-scores_{season}.json", season=ALL_SEASONS),
+        auspice_frequencies=expand("auspice/welsh-escape-scores_{season}_tip-frequencies.json", season=ALL_SEASONS),
 
 rule download_metadata:
     output:
@@ -199,6 +209,11 @@ rule refine:
     output:
         tree="results/{season}/tree.nwk",
         node_data="results/{season}/branch_lengths.json",
+    params:
+        coalescent = "const",
+        date_inference = "marginal",
+        clock_rate = 0.00382,
+        clock_std_dev = 0.00382 / 5,
     conda: "env.yaml"
     shell:
         """
@@ -207,6 +222,14 @@ rule refine:
             --alignment {input.alignment} \
             --tree {input.tree} \
             --keep-root \
+            --timetree \
+            --stochastic-resolve \
+            --use-fft \
+            --no-covariance \
+            --clock-rate {params.clock_rate} \
+            --clock-std-dev {params.clock_std_dev} \
+            --coalescent {params.coalescent} \
+            --date-inference {params.date_inference} \
             --output-tree {output.tree} \
             --output-node-data {output.node_data}
         """
@@ -413,16 +436,50 @@ rule clades:
             --output {output.clades}
         """
 
+rule lbi:
+    input:
+        tree="results/{season}/tree.nwk",
+        branch_lengths="results/{season}/branch_lengths.json",
+    output:
+        lbi="results/{season}/lbi.json",
+    params:
+        attribute_name="lbi",
+        tau=0.5,
+        window=0.5,
+    conda: "env.yaml"
+    shell:
+        """
+        augur lbi \
+            --tree {input.tree} \
+            --branch-lengths {input.branch_lengths} \
+            --attribute-names {params.attribute_name} \
+            --tau {params.tau} \
+            --window {params.window} \
+            --output {output.lbi}
+        """
+
+def get_node_data(wildcards):
+    node_data = [
+        f"results/{wildcards.season}/branch_lengths.json",
+        f"results/{wildcards.season}/muts.json",
+        f"results/{wildcards.season}/epitope_distances.json",
+        f"results/{wildcards.season}/lbi.json",
+    ]
+
+    if wildcards.season in FUTURE_SEASON_BY_CURRENT_SEASON:
+        node_data.extend([
+            f"results/{wildcards.season}/clades.json",
+            f"results/{wildcards.season}/scaled_escape_scores.json",
+            f"results/{wildcards.season}/weighted_distances_to_future.json",
+        ])
+
+    return node_data
+
 rule export:
     input:
         tree="results/{season}/tree.nwk",
         metadata="results/{season}/metadata.tsv",
-        branch_lengths="results/{season}/branch_lengths.json",
-        muts="results/{season}/muts.json",
-        epitope_distances="results/{season}/epitope_distances.json",
-        scaled_escape_scores="results/{season}/scaled_escape_scores.json",
-        weighted_distances_to_future="results/{season}/weighted_distances_to_future.json",
-        clades="results/{season}/clades.json",
+        node_data=get_node_data,
         auspice_config="config/auspice_config.json",
     output:
         auspice_json="auspice/welsh-escape-scores_{season}.json",
@@ -432,7 +489,7 @@ rule export:
         augur export v2 \
             --tree {input.tree} \
             --metadata {input.metadata} \
-            --node-data {input.branch_lengths} {input.muts} {input.epitope_distances} {input.scaled_escape_scores} {input.weighted_distances_to_future} {input.clades} \
+            --node-data {input.node_data} \
             --auspice-config {input.auspice_config} \
             --minify-json \
             --output {output.auspice_json}
@@ -451,6 +508,7 @@ rule json_to_table:
             "welsh_ep",
             "welsh_escape",
             "welsh_escape_per_ha1",
+            "lbi",
             "weighted_distance_to_observed_future",
         ]
     conda: "env.yaml"
@@ -494,8 +552,9 @@ rule plot_distances:
         distances="results/distances.tsv",
         color_schemes="config/color_schemes.tsv",
     output:
-        distances_by_subclade="results/distance_to_the_future_by_epitope_score_subclade_and_season.pdf",
-        distances_by_historical_clade="results/distance_to_the_future_by_epitope_score_historical_clade_and_season.pdf",
+        distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
+        distances_by_subclade_and_lbi="results/distance_to_the_future_by_lbi_subclade_and_season.pdf",
+        distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
     conda: "env.yaml"
     notebook:
