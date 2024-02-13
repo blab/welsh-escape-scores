@@ -299,7 +299,7 @@ rule frequencies:
         tree="results/{season}/tree.nwk",
         metadata="results/{season}/metadata.tsv",
     output:
-        frequencies="auspice/{season}_tip-frequencies.json",
+        frequencies="auspice/welsh-escape-scores_{season}_tip-frequencies.json",
     params:
         narrow_bandwidth = 1 / 12.0,
         wide_bandwidth = 3 / 12.0,
@@ -340,7 +340,7 @@ rule concatenate_aa_sequences:
 rule convert_frequencies_to_table:
     input:
         tree="results/{season}/tree.nwk",
-        frequencies="auspice/{season}_tip-frequencies.json",
+        frequencies="auspice/welsh-escape-scores_{season}_tip-frequencies.json",
     output:
         frequencies = "results/{season}/frequencies.tsv",
     conda: "env.yaml"
@@ -425,7 +425,7 @@ rule export:
         clades="results/{season}/clades.json",
         auspice_config="config/auspice_config.json",
     output:
-        auspice_json="auspice/{season}.json",
+        auspice_json="auspice/welsh-escape-scores_{season}.json",
     conda: "env.yaml",
     shell:
         """
@@ -440,7 +440,7 @@ rule export:
 
 rule json_to_table:
     input:
-        auspice_json="auspice/{season}.json",
+        auspice_json="auspice/welsh-escape-scores_{season}.json",
     output:
         distances="results/{season}/distances_by_strain.tsv",
     params:
