@@ -327,7 +327,8 @@ rule frequencies:
         narrow_bandwidth = 1 / 12.0,
         wide_bandwidth = 3 / 12.0,
         proportion_wide = 0.0,
-        pivot_interval = 1
+        pivot_interval = 1,
+        min_date = get_min_date_for_season,
     conda: "env.yaml"
     shell:
         """
@@ -339,6 +340,7 @@ rule frequencies:
             --wide-bandwidth {params.wide_bandwidth} \
             --proportion-wide {params.proportion_wide} \
             --pivot-interval {params.pivot_interval} \
+            --min-date {params.min_date} \
             --max-date {wildcards.season} \
             --output {output}
         """
