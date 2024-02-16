@@ -18,6 +18,7 @@ wildcard_constraints:
 
 rule all:
     input:
+        "results/experimental_design.pdf",
         distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
         distances_by_subclade_and_lbi="results/distance_to_the_future_by_lbi_subclade_and_season.pdf",
         distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
@@ -680,3 +681,12 @@ rule export_welsh_measurements:
             --minify-json \
             --output-json {output.measurements}
         """
+
+rule plot_experimental_design:
+    output:
+        experimental_design="results/experimental_design.pdf",
+    params:
+        future_season_by_current_season=FUTURE_SEASON_BY_CURRENT_SEASON,
+    conda: "env.yaml"
+    notebook:
+        "notebooks/plot-experimental-design.py.ipynb"
