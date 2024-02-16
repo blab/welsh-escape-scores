@@ -85,11 +85,6 @@
       "type": "categorical"
     },
     {
-      "key": "division",
-      "title": "Division",
-      "type": "categorical"
-    },
-    {
       "key": "submitting_lab",
       "title": "Submitting lab",
       "type": "categorical"
@@ -101,7 +96,6 @@
     }
   ],
   "geo_resolutions": [
-    "division",
     "country",
     "region"
   ],
@@ -115,7 +109,6 @@
     "subclade",
     "region",
     "country",
-    "division",
     "submitting_lab"
   ],
   "panels": [
