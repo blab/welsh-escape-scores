@@ -46,7 +46,12 @@
     },
     {
       "key": "welsh_escape",
-      "title": "Welsh et al. escape score",
+      "title": "Welsh et al. escape score (avg)",
+      "type": "continuous"
+    },
+    {
+      "key": "welsh_escape_upper_80th_quantile",
+      "title": "Welsh et al. escape score (80th pct)",
       "type": "continuous"
     },
     {
@@ -56,7 +61,12 @@
     },
     {
       "key": "welsh_escape_per_ha1",
-      "title": "Welsh et al. escape score per HA1 subs",
+      "title": "Welsh et al. escape score (avg) per HA1 subs",
+      "type": "continuous"
+    },
+    {
+      "key": "welsh_escape_upper_80th_quantile_per_ha1",
+      "title": "Welsh et al. escape score (80th pct) per HA1 subs",
       "type": "continuous"
     },
     {

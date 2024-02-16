@@ -21,6 +21,7 @@ if __name__ == '__main__':
         if "welsh_escape" in node_values and "ha1" in node_values and node_values["ha1"] > 0:
             scaled_escape_scores[node] = {
                 "welsh_escape_per_ha1": node_values["welsh_escape"] / node_values["ha1"],
+                "welsh_escape_upper_80th_quantile_per_ha1": node_values["welsh_escape_upper_80th_quantile"] / node_values["ha1"]
             }
 
     # Export distances to JSON.

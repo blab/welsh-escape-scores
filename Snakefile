@@ -21,6 +21,7 @@ rule all:
         "results/experimental_design.pdf",
         distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
         distances_by_subclade_and_lbi="results/distance_to_the_future_by_lbi_subclade_and_season.pdf",
+        distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
         distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
         auspice_jsons=expand("auspice/welsh-escape-scores_{season}.json", season=ALL_SEASONS),
@@ -286,13 +287,14 @@ rule distances:
             "config/ha1_sites.json",
             "config/welsh_epitope_sites.json",
             "config/welsh_escape_by_site_and_amino_acid.json",
+            "config/welsh_upper_80th_quantile_escape_by_site_and_amino_acid.json",
         ],
     output:
         distances="results/{season}/epitope_distances.json",
     params:
         genes = ["SigPep", "HA1", "HA2"],
-        comparisons = ["root", "root", "root"],
-        attribute_names = ["ha1", "welsh_ep", "welsh_escape"],
+        comparisons = ["root", "root", "root", "root"],
+        attribute_names = ["ha1", "welsh_ep", "welsh_escape", "welsh_escape_upper_80th_quantile"],
     conda: "env.yaml"
     shell:
         """
@@ -512,6 +514,8 @@ rule json_to_table:
             "welsh_ep",
             "welsh_escape",
             "welsh_escape_per_ha1",
+            "welsh_escape_upper_80th_quantile",
+            "welsh_escape_upper_80th_quantile_per_ha1",
             "lbi",
             "weighted_distance_to_observed_future",
         ]
@@ -558,6 +562,7 @@ rule plot_distances:
     output:
         distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
         distances_by_subclade_and_lbi="results/distance_to_the_future_by_lbi_subclade_and_season.pdf",
+        distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
         distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
     conda: "env.yaml"
