@@ -20,9 +20,9 @@ rule all:
     input:
         "results/experimental_design.pdf",
         distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
-        distances_by_subclade_and_lbi="results/distance_to_the_future_by_lbi_subclade_and_season.pdf",
         distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
         distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
+        distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
         auspice_jsons=expand("auspice/welsh-escape-scores_{season}.json", season=ALL_SEASONS),
         auspice_frequencies=expand("auspice/welsh-escape-scores_{season}_tip-frequencies.json", season=ALL_SEASONS),
@@ -561,9 +561,9 @@ rule plot_distances:
         color_schemes="config/color_schemes.tsv",
     output:
         distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
-        distances_by_subclade_and_lbi="results/distance_to_the_future_by_lbi_subclade_and_season.pdf",
         distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
         distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
+        distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
     conda: "env.yaml"
     notebook:
