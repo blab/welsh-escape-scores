@@ -110,6 +110,7 @@
   ],
   "panels": [
     "tree",
+    "measurements",
     "entropy",
     "frequencies"
   ]

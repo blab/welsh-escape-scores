@@ -24,6 +24,7 @@ rule all:
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
         auspice_jsons=expand("auspice/welsh-escape-scores_{season}.json", season=ALL_SEASONS),
         auspice_frequencies=expand("auspice/welsh-escape-scores_{season}_tip-frequencies.json", season=ALL_SEASONS),
+        auspice_measurements=expand("auspice/welsh-escape-scores_{season}_measurements.json", season=ALL_SEASONS),
 
 rule download_metadata:
     output:
@@ -561,3 +562,121 @@ rule plot_distances:
     conda: "env.yaml"
     notebook:
         "notebooks/plot-distances.py.ipynb"
+
+rule welsh_epitope_distances_by_serum:
+    input:
+        tree="results/{season}/tree.nwk",
+        alignments = [
+            "results/{season}/translations/SigPep_withInternalNodes.fasta",
+            "results/{season}/translations/HA1_withInternalNodes.fasta",
+            "results/{season}/translations/HA2_withInternalNodes.fasta",
+        ],
+        distance_map="config/welsh_escape_by_site_and_amino_acid_by_serum/{serum}.json",
+    output:
+        distances="results/{season}/welsh_epitope_distances_by_serum/{serum}.json",
+    params:
+        genes = ["SigPep", "HA1", "HA2"],
+        comparisons="root",
+        attribute_names="welsh_escape_for_serum",
+    conda: "env.yaml"
+    shell:
+        """
+        augur distance \
+            --tree {input.tree} \
+            --alignment {input.alignments} \
+            --gene-names {params.genes} \
+            --compare-to {params.comparisons} \
+            --attribute-name {params.attribute_names} \
+            --map {input.distance_map} \
+            --output {output.distances}
+        """
+
+rule convert_welsh_epitope_distances_to_table:
+    input:
+        tree="results/{season}/tree.nwk",
+        distances="results/{season}/welsh_epitope_distances_by_serum/{serum}.json",
+        distance_map="config/welsh_escape_by_site_and_amino_acid_by_serum/{serum}.json",
+    output:
+        distances="results/{season}/welsh_epitope_distances_by_serum/{serum}.tsv",
+    params:
+        distance_map_attributes=["cohort_serum", "serum", "cohort"]
+    conda: "env.yaml"
+    shell:
+        """
+        python3 scripts/convert_welsh_epitope_distances_to_table.py \
+            --tree {input.tree} \
+            --distances {input.distances} \
+            --distance-map {input.distance_map} \
+            --distance-map-attributes {params.distance_map_attributes:q} \
+            --output {output.distances}
+        """
+
+def get_welsh_epitope_distances_by_serum(wildcards):
+    import glob
+    from pathlib import Path
+
+    distance_maps = glob.glob("config/welsh_escape_by_site_and_amino_acid_by_serum/*.json")
+    serum_samples = [
+        Path(distance_map).stem
+        for distance_map in distance_maps
+    ]
+
+    return [
+        f"results/{wildcards.season}/welsh_epitope_distances_by_serum/{serum}.tsv"
+        for serum in serum_samples
+    ]
+
+rule aggregate_welsh_epitope_distances_by_serum:
+    input:
+        distances=get_welsh_epitope_distances_by_serum,
+    output:
+        distances="results/{season}/welsh_epitope_distances_by_serum.tsv",
+    conda: "env.yaml"
+    shell:
+        """
+        csvtk concat -t {input.distances} > {output.distances}
+        """
+
+rule export_welsh_measurements:
+    input:
+        distances="results/{season}/welsh_epitope_distances_by_serum.tsv",
+    output:
+        measurements="auspice/welsh-escape-scores_{season}_measurements.json",
+    conda: "env.yaml"
+    params:
+        default_group_by="cohort_serum",
+        strain_column="strain",
+        value_column="welsh_escape_for_serum",
+        key="welsh_escape",
+        title="Welsh et al. escape scores",
+        x_axis_label="escape score",
+        thresholds=[0.0],
+        filters=[
+            "cohort_serum",
+            "cohort",
+        ],
+        include_columns=[
+            "strain",
+            "cohort_serum",
+            "cohort",
+            "welsh_escape_for_serum",
+        ],
+    shell:
+        """
+        augur measurements export \
+            --collection {input.distances} \
+            --grouping-column {params.filters} \
+            --group-by {params.default_group_by} \
+            --include-columns {params.include_columns:q} \
+            --strain-column {params.strain_column} \
+            --value-column {params.value_column} \
+            --key {params.key} \
+            --title {params.title:q} \
+            --x-axis-label {params.x_axis_label:q} \
+            --thresholds {params.thresholds} \
+            --filters {params.filters} \
+            --show-threshold \
+            --hide-overall-mean \
+            --minify-json \
+            --output-json {output.measurements}
+        """
