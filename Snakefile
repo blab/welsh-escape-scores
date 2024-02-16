@@ -489,6 +489,7 @@ rule export:
         auspice_config="config/auspice_config.json",
     output:
         auspice_json="auspice/welsh-escape-scores_{season}.json",
+        root_sequence_json="auspice/welsh-escape-scores_{season}_root-sequence.json",
     conda: "env.yaml",
     shell:
         """
@@ -498,6 +499,7 @@ rule export:
             --node-data {input.node_data} \
             --auspice-config {input.auspice_config} \
             --minify-json \
+            --include-root-sequence \
             --output {output.auspice_json}
         """
 
