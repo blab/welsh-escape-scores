@@ -55,6 +55,11 @@
       "type": "continuous"
     },
     {
+      "key": "welsh_escape_youth",
+      "title": "Welsh et al. escape score (ages 2-20)",
+      "type": "continuous"
+    },
+    {
       "key": "ha1",
       "title": "HA1 mutations",
       "type": "continuous"
@@ -67,6 +72,11 @@
     {
       "key": "welsh_escape_upper_80th_quantile_per_ha1",
       "title": "Welsh et al. escape score (80th pct) per HA1 subs",
+      "type": "continuous"
+    },
+    {
+      "key": "welsh_escape_youth_per_ha1",
+      "title": "Welsh et al. escape score (ages 2-20) per HA1 subs",
       "type": "continuous"
     },
     {

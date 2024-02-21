@@ -21,12 +21,26 @@ rule all:
         "results/experimental_design.pdf",
         distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
         distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
+        distances_by_subclade_and_youth_escape_score="results/distance_to_the_future_by_youth_escape_score_subclade_and_season.pdf",
         distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
         distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
         auspice_jsons=expand("auspice/welsh-escape-scores_{season}.json", season=ALL_SEASONS),
         auspice_frequencies=expand("auspice/welsh-escape-scores_{season}_tip-frequencies.json", season=ALL_SEASONS),
         auspice_measurements=expand("auspice/welsh-escape-scores_{season}_measurements.json", season=ALL_SEASONS),
+
+rule summarize_escape_scores_as_distance_maps:
+    output:
+        epitope_sites="config/welsh_epitope_sites.json",
+        mean_escape_by_site_and_amino_acid="config/welsh_escape_by_site_and_amino_acid.json",
+        upper_80th_quantile_escape_by_site_and_amino_acid="config/welsh_upper_80th_quantile_escape_by_site_and_amino_acid.json",
+        youth_escape_by_site_and_amino_acid="config/welsh_youth_escape_by_site_and_amino_acid.json",
+        welsh_escape_by_site_and_amino_acid_by_serum=directory("config/welsh_escape_by_site_and_amino_acid_by_serum"),
+    params:
+        full_escape_scores_url="https://github.com/dms-vep/flu_h3_hk19_dms/raw/main/results/full_hk19_escape_scores.csv",
+    conda: "env.yaml"
+    notebook:
+        "notebooks/summarize-escape-scores-from-Welsh-et-al-data.py.ipynb"
 
 rule download_metadata:
     output:
@@ -288,13 +302,14 @@ rule distances:
             "config/welsh_epitope_sites.json",
             "config/welsh_escape_by_site_and_amino_acid.json",
             "config/welsh_upper_80th_quantile_escape_by_site_and_amino_acid.json",
+            "config/welsh_youth_escape_by_site_and_amino_acid.json",
         ],
     output:
         distances="results/{season}/epitope_distances.json",
     params:
         genes = ["SigPep", "HA1", "HA2"],
-        comparisons = ["root", "root", "root", "root"],
-        attribute_names = ["ha1", "welsh_ep", "welsh_escape", "welsh_escape_upper_80th_quantile"],
+        comparisons = ["root", "root", "root", "root", "root"],
+        attribute_names = ["ha1", "welsh_ep", "welsh_escape", "welsh_escape_upper_80th_quantile", "welsh_escape_youth"],
     conda: "env.yaml"
     shell:
         """
@@ -313,11 +328,18 @@ rule scale_escape_scores_by_ha1_substitutions:
         distances="results/{season}/epitope_distances.json",
     output:
         distances="results/{season}/scaled_escape_scores.json",
+    params:
+        attributes_to_scale=[
+            "welsh_escape",
+            "welsh_escape_upper_80th_quantile",
+            "welsh_escape_youth",
+        ]
     conda: "env.yaml"
     shell:
         """
         python3 scripts/scale_escape_scores_by_ha1_substititions.py \
             --distances {input.distances} \
+            --attributes-to-scale {params.attributes_to_scale:q} \
             --output {output.distances}
         """
 
@@ -518,6 +540,8 @@ rule json_to_table:
             "welsh_escape_per_ha1",
             "welsh_escape_upper_80th_quantile",
             "welsh_escape_upper_80th_quantile_per_ha1",
+            "welsh_escape_youth",
+            "welsh_escape_youth_per_ha1",
             "lbi",
             "weighted_distance_to_observed_future",
         ]
@@ -564,6 +588,7 @@ rule plot_distances:
     output:
         distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
         distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
+        distances_by_subclade_and_youth_escape_score="results/distance_to_the_future_by_youth_escape_score_subclade_and_season.pdf",
         distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
         distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
         escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
