@@ -3,6 +3,7 @@
 *.log
 tmp/
 .snakemake
+.snakemake_timestamp
 auspice
 data
 nextclade
