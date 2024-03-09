@@ -1,4 +1,6 @@
 import datetime
+import glob
+from pathlib import Path
 
 FUTURE_SEASON_BY_CURRENT_SEASON = {
     "2020-10-01": "2021-10-01",
@@ -29,12 +31,10 @@ rule all:
         auspice_frequencies=expand("auspice/welsh-escape-scores_{season}_tip-frequencies.json", season=ALL_SEASONS),
         auspice_measurements=expand("auspice/welsh-escape-scores_{season}_measurements.json", season=ALL_SEASONS),
 
-rule summarize_escape_scores_as_distance_maps:
+checkpoint summarize_escape_scores_as_distance_maps:
     output:
         epitope_sites="config/welsh_epitope_sites.json",
-        mean_escape_by_site_and_amino_acid="config/welsh_escape_by_site_and_amino_acid.json",
-        upper_80th_quantile_escape_by_site_and_amino_acid="config/welsh_upper_80th_quantile_escape_by_site_and_amino_acid.json",
-        youth_escape_by_site_and_amino_acid="config/welsh_youth_escape_by_site_and_amino_acid.json",
+        welsh_escape_by_site_and_amino_acid_by_dataset_and_cohort=directory("config/welsh_escape_by_site_and_amino_acid_by_dataset_and_cohort"),
         welsh_escape_by_site_and_amino_acid_by_serum=directory("config/welsh_escape_by_site_and_amino_acid_by_serum"),
     params:
         full_escape_scores_url="https://github.com/dms-vep/flu_h3_hk19_dms/raw/main/results/full_hk19_escape_scores.csv",
@@ -289,6 +289,11 @@ rule ancestral:
             --inference {params.inference}
         """
 
+def aggregate_distance_maps_by_dataset_and_cohort(wildcards):
+    checkpoint_output = checkpoints.summarize_escape_scores_as_distance_maps.get(**wildcards).output.welsh_escape_by_site_and_amino_acid_by_dataset_and_cohort
+    path = os.path.join(checkpoint_output, "*.json")
+    return glob.glob(path)
+
 rule distances:
     input:
         tree="results/{season}/tree.nwk",
@@ -300,16 +305,16 @@ rule distances:
         distance_maps = [
             "config/ha1_sites.json",
             "config/welsh_epitope_sites.json",
-            "config/welsh_escape_by_site_and_amino_acid.json",
-            "config/welsh_upper_80th_quantile_escape_by_site_and_amino_acid.json",
-            "config/welsh_youth_escape_by_site_and_amino_acid.json",
         ],
+        distance_maps_by_dataset_and_cohort=aggregate_distance_maps_by_dataset_and_cohort,
     output:
         distances="results/{season}/epitope_distances.json",
     params:
         genes = ["SigPep", "HA1", "HA2"],
-        comparisons = ["root", "root", "root", "root", "root"],
-        attribute_names = ["ha1", "welsh_ep", "welsh_escape", "welsh_escape_upper_80th_quantile", "welsh_escape_youth"],
+        comparisons = ["root", "root"],
+        attribute_names = ["ha1", "welsh_ep"],
+        comparisons_by_dataset_and_cohort = lambda wildcards: ["root"] * len(aggregate_distance_maps_by_dataset_and_cohort(wildcards)),
+        attribute_names_by_dataset_and_cohort = lambda wildcards: [Path(distance_map).stem for distance_map in aggregate_distance_maps_by_dataset_and_cohort(wildcards)],
     conda: "env.yaml"
     shell:
         """
@@ -317,23 +322,20 @@ rule distances:
             --tree {input.tree} \
             --alignment {input.alignments} \
             --gene-names {params.genes:q} \
-            --compare-to {params.comparisons:q} \
-            --attribute-name {params.attribute_names:q} \
-            --map {input.distance_maps} \
+            --compare-to {params.comparisons:q} {params.comparisons_by_dataset_and_cohort:q} \
+            --attribute-name {params.attribute_names:q} {params.attribute_names_by_dataset_and_cohort:q} \
+            --map {input.distance_maps} {input.distance_maps_by_dataset_and_cohort} \
             --output {output.distances}
         """
 
 rule scale_escape_scores_by_ha1_substitutions:
     input:
         distances="results/{season}/epitope_distances.json",
+        distance_maps=aggregate_distance_maps_by_dataset_and_cohort,
     output:
         distances="results/{season}/scaled_escape_scores.json",
     params:
-        attributes_to_scale=[
-            "welsh_escape",
-            "welsh_escape_upper_80th_quantile",
-            "welsh_escape_youth",
-        ]
+        attributes_to_scale=lambda wildcards: [Path(distance_map).stem for distance_map in aggregate_distance_maps_by_dataset_and_cohort(wildcards)],
     conda: "env.yaml"
     shell:
         """
@@ -528,6 +530,7 @@ rule export:
 rule json_to_table:
     input:
         auspice_json="auspice/welsh-escape-scores_{season}.json",
+        distance_maps=aggregate_distance_maps_by_dataset_and_cohort,
     output:
         distances="results/{season}/distances_by_strain.tsv",
     params:
@@ -536,21 +539,16 @@ rule json_to_table:
             "subclade",
             "ha1",
             "welsh_ep",
-            "welsh_escape",
-            "welsh_escape_per_ha1",
-            "welsh_escape_upper_80th_quantile",
-            "welsh_escape_upper_80th_quantile_per_ha1",
-            "welsh_escape_youth",
-            "welsh_escape_youth_per_ha1",
             "lbi",
             "weighted_distance_to_observed_future",
-        ]
+        ],
+        escape_attributes=lambda wildcards: [Path(distance_map).stem for distance_map in aggregate_distance_maps_by_dataset_and_cohort(wildcards)],
     conda: "env.yaml"
     shell:
         """
         python3 scripts/auspice_tree_to_table.py \
             --tree {input.auspice_json} \
-            --attributes {params.attributes:q} \
+            --attributes {params.attributes:q} {params.escape_attributes:q} \
             --output-metadata {output.distances}
         """
 
