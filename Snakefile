@@ -21,12 +21,8 @@ wildcard_constraints:
 rule all:
     input:
         "results/experimental_design.pdf",
-        distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
-        distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
-        distances_by_subclade_and_youth_escape_score="results/distance_to_the_future_by_youth_escape_score_subclade_and_season.pdf",
-        distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
+        escape_score_plots="results/escape-score-plots/",
         distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
-        escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
         auspice_jsons=expand("auspice/welsh-escape-scores_{season}.json", season=ALL_SEASONS),
         auspice_frequencies=expand("auspice/welsh-escape-scores_{season}_tip-frequencies.json", season=ALL_SEASONS),
         auspice_measurements=expand("auspice/welsh-escape-scores_{season}_measurements.json", season=ALL_SEASONS),
@@ -294,6 +290,12 @@ def aggregate_distance_maps_by_dataset_and_cohort(wildcards):
     path = os.path.join(checkpoint_output, "*.json")
     return glob.glob(path)
 
+def get_escape_score_attributes_by_dataset_and_cohort(wildcards):
+    return [
+        Path(distance_map).stem
+        for distance_map in aggregate_distance_maps_by_dataset_and_cohort(wildcards)
+    ]
+
 rule distances:
     input:
         tree="results/{season}/tree.nwk",
@@ -314,7 +316,7 @@ rule distances:
         comparisons = ["root", "root"],
         attribute_names = ["ha1", "welsh_ep"],
         comparisons_by_dataset_and_cohort = lambda wildcards: ["root"] * len(aggregate_distance_maps_by_dataset_and_cohort(wildcards)),
-        attribute_names_by_dataset_and_cohort = lambda wildcards: [Path(distance_map).stem for distance_map in aggregate_distance_maps_by_dataset_and_cohort(wildcards)],
+        attribute_names_by_dataset_and_cohort = get_escape_score_attributes_by_dataset_and_cohort,
     conda: "env.yaml"
     shell:
         """
@@ -335,7 +337,7 @@ rule scale_escape_scores_by_ha1_substitutions:
     output:
         distances="results/{season}/scaled_escape_scores.json",
     params:
-        attributes_to_scale=lambda wildcards: [Path(distance_map).stem for distance_map in aggregate_distance_maps_by_dataset_and_cohort(wildcards)],
+        attributes_to_scale=get_escape_score_attributes_by_dataset_and_cohort,
     conda: "env.yaml"
     shell:
         """
@@ -542,13 +544,14 @@ rule json_to_table:
             "lbi",
             "weighted_distance_to_observed_future",
         ],
-        escape_attributes=lambda wildcards: [Path(distance_map).stem for distance_map in aggregate_distance_maps_by_dataset_and_cohort(wildcards)],
+        escape_attributes=get_escape_score_attributes_by_dataset_and_cohort,
+        scaled_escape_attributes=lambda wildcards: [f"{attribute}_per_ha1" for attribute in get_escape_score_attributes_by_dataset_and_cohort(wildcards)],
     conda: "env.yaml"
     shell:
         """
         python3 scripts/auspice_tree_to_table.py \
             --tree {input.auspice_json} \
-            --attributes {params.attributes:q} {params.escape_attributes:q} \
+            --attributes {params.attributes:q} {params.escape_attributes:q} {params.scaled_escape_attributes:q} \
             --output-metadata {output.distances}
         """
 
@@ -583,13 +586,12 @@ rule plot_distances:
     input:
         distances="results/distances.tsv",
         color_schemes="config/color_schemes.tsv",
+        distance_maps_by_dataset_and_cohort=aggregate_distance_maps_by_dataset_and_cohort,
     output:
-        distances_by_subclade_and_escape_score="results/distance_to_the_future_by_escape_score_subclade_and_season.pdf",
-        distances_by_subclade_and_upper_80th_quantile_escape_score="results/distance_to_the_future_by_upper_80th_quantile_escape_score_subclade_and_season.pdf",
-        distances_by_subclade_and_youth_escape_score="results/distance_to_the_future_by_youth_escape_score_subclade_and_season.pdf",
-        distances_by_historical_clade="results/distance_to_the_future_by_escape_score_historical_clade_and_season.pdf",
+        plots=directory("results/escape-score-plots/"),
         distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
-        escape_scores_by_historical_clade="results/escape_scores_by_historical_clade_and_season.pdf",
+    params:
+        escape_score_attributes_to_plot=lambda wildcards: [f"{attribute}_per_ha1" for attribute in get_escape_score_attributes_by_dataset_and_cohort(wildcards)],
     conda: "env.yaml"
     notebook:
         "notebooks/plot-distances.py.ipynb"
