@@ -23,6 +23,7 @@ rule all:
         "results/experimental_design.pdf",
         escape_score_plots="results/escape-score-plots/",
         distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
+        correlations_by_dataset_and_season="results/correlations_by_dataset_and_season.csv",
         auspice_jsons=expand("auspice/welsh-escape-scores_{season}.json", season=ALL_SEASONS),
         auspice_frequencies=expand("auspice/welsh-escape-scores_{season}_tip-frequencies.json", season=ALL_SEASONS),
         auspice_measurements=expand("auspice/welsh-escape-scores_{season}_measurements.json", season=ALL_SEASONS),
@@ -590,6 +591,7 @@ rule plot_distances:
     output:
         plots=directory("results/escape-score-plots/"),
         distances_by_historical_clade_and_lbi="results/distance_to_the_future_by_lbi_historical_clade_and_season.pdf",
+        correlations_by_dataset_and_season="results/correlations_by_dataset_and_season.csv",
     params:
         escape_score_attributes_to_plot=lambda wildcards: [f"{attribute}_per_ha1" for attribute in get_escape_score_attributes_by_dataset_and_cohort(wildcards)],
     conda: "env.yaml"
